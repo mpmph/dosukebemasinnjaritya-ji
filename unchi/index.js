@@ -10,16 +10,16 @@ client.once('ready', async () => {
   // コマンド1: /binding
   const bindingCommand = new SlashCommandBuilder()
     .setName('binding')
-    .setDescription('縛り用だよーん');
+    .setDescription('ランダムな武器をリッチテキストで表示します');
 
-  // コマンド2: /hello
-  const omikujiCommand = new SlashCommandBuilder()
+  // コマンド2: /weponomikuji
+  const weponomikujiCommand = new SlashCommandBuilder()
     .setName('weponomikuji')
-    .setDescription('今日はどんな武器が当たるかな？');
+    .setDescription('今日の武器おみくじを引きます');
 
-  // コマンドを配列で登録
+  // コマンドを登録
   try {
-    await client.application.commands.set([bindingCommand, omikujiCommand]);
+    await client.application.commands.set([bindingCommand, weponomikujiCommand]);
     console.log('スラッシュコマンドを登録しました');
   } catch (error) {
     console.error('コマンド登録エラー:', error);
@@ -50,8 +50,11 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.reply({ embeds: [embed] });
   }
 
-  if (interaction.commandName === 'hello') {
-    await interaction.reply('こんにちは！');
+  if (interaction.commandName === 'weponomikuji') {
+    const weapons = ['SR', 'SG', 'AR', 'SMG', 'LMG', 'DMR', 'BOW'];
+    const randomWeapon = weapons[Math.floor(Math.random() * weapons.length)];
+
+    await interaction.reply(`今日は${randomWeapon}が当たる日かも…？`);
   }
 });
 
