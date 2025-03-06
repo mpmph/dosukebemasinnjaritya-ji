@@ -41,9 +41,9 @@ client.on('interactionCreate', async (interaction) => {
 
     // リッチテキスト（Embed）の作成
     const embed = new EmbedBuilder()
-      .setTitle('ランダムな武器')
-      .setDescription(`あなたの武器は: **${randomWeapon}**`)
-      .setColor('#00ff00') // 緑色（カスタマイズ可能）
+      .setTitle('武器縛りー')
+      .setDescription(`縛る武器は: **${randomWeapon}**`)
+      .setColor('#414fa3') // 緑色（カスタマイズ可能）
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });
