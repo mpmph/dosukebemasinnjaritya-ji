@@ -4,25 +4,28 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] 
 });
 
-// スラッシュコマンドの登録
 client.once('ready', async () => {
   console.log('Bot is ready!');
 
-  // コマンドデータ
+  // コマンド1: /binding
   const bindingCommand = new SlashCommandBuilder()
     .setName('binding')
-    .setDescription('ランダムな武器をリッチテキストで表示します');
+    .setDescription('縛り用だよーん');
 
-  // コマンドを登録（グローバルまたは特定のギルド）
+  // コマンド2: /hello
+  const omikujiCommand = new SlashCommandBuilder()
+    .setName('weponomikuji')
+    .setDescription('今日はどんな武器が当たるかな？');
+
+  // コマンドを配列で登録
   try {
-    await client.application.commands.set([bindingCommand]);
+    await client.application.commands.set([bindingCommand, omikujiCommand]);
     console.log('スラッシュコマンドを登録しました');
   } catch (error) {
     console.error('コマンド登録エラー:', error);
   }
 });
 
-// 既存のメッセージコマンド
 client.on('messageCreate', (message) => {
   if (message.author.bot) return;
   if (message.content === '!dice') {
@@ -31,7 +34,6 @@ client.on('messageCreate', (message) => {
   }
 });
 
-// スラッシュコマンドの処理
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isCommand()) return;
 
@@ -39,14 +41,17 @@ client.on('interactionCreate', async (interaction) => {
     const weapons = ['SR', 'SG', 'AR', 'SMG', 'LMG', 'DMR', 'BOW'];
     const randomWeapon = weapons[Math.floor(Math.random() * weapons.length)];
 
-    // リッチテキスト（Embed）の作成
     const embed = new EmbedBuilder()
-      .setTitle('武器縛りー')
-      .setDescription(`縛る武器は: **${randomWeapon}**`)
-      .setColor('#414fa3') // 緑色（カスタマイズ可能）
+      .setTitle('ランダムな武器')
+      .setDescription(`あなたの武器は: **${randomWeapon}**`)
+      .setColor('#00ff00')
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });
+  }
+
+  if (interaction.commandName === 'hello') {
+    await interaction.reply('こんにちは！');
   }
 });
 
