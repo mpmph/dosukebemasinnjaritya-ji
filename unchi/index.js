@@ -1,7 +1,19 @@
 const { Client, GatewayIntentBits, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const express = require('express'); // Expressをインポート
+const app = express(); // Expressアプリを作成
 
 const client = new Client({ 
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] 
+});
+
+// Pingエンドポイント
+app.get('/ping', (req, res) => {
+  res.send('Bot is awake!');
+});
+
+// ポート3000でサーバーを起動
+app.listen(3000, () => {
+  console.log('Ping server running on port 3000');
 });
 
 client.once('ready', async () => {
@@ -41,45 +53,39 @@ client.on('interactionCreate', async (interaction) => {
   if (interaction.commandName === 'binding') {
     const weapons = ['SR', 'SG', 'AR', 'SMG', 'LMG', 'DMR', 'BOW'];
     const randomWeapon = weapons[Math.floor(Math.random() * weapons.length)];
-
     const embed = new EmbedBuilder()
       .setTitle('ランダムな武器')
       .setDescription(`あなたの武器は: **${randomWeapon}**`)
       .setColor('#00ff00')
       .setTimestamp();
-
     await interaction.reply({ embeds: [embed] });
   }
 
   if (interaction.commandName === 'weponomikuji') {
     const weapons = ['SR', 'SG', 'AR', 'SMG', 'LMG', 'DMR', 'BOW'];
     const randomWeapon = weapons[Math.floor(Math.random() * weapons.length)];
-
     await interaction.reply(`今日は${randomWeapon}が当たる日かも…？`);
   }
 
   if (interaction.commandName === 'pullpack') {
-    const rand = Math.random() * 100; // 0〜100のランダムな数値
+    const rand = Math.random() * 100;
     let rarity;
-
     if (rand < 0.045) {
-      rarity = 'SuperLegend'; // 0〜0.045% (0.045%)
+      rarity = 'SuperLegend';
     } else if (rand < 5.025) {
-      rarity = 'Gold'; // 0.045〜5.025% (4.98%)
+      rarity = 'Gold';
     } else if (rand < 12.5) {
-      rarity = 'Epic'; // 5.025〜12.5% (7.475%)
+      rarity = 'Epic';
     } else if (rand < 62.495) {
-      rarity = 'Rare'; // 12.5〜62.495% (49.995%)
+      rarity = 'Rare';
     } else {
-      rarity = 'Common'; // 62.495〜100% (37.505%)
+      rarity = 'Common';
     }
-
     const embed = new EmbedBuilder()
       .setTitle('パック結果')
       .setDescription(`あなたのパックは: **${rarity}**`)
       .setColor(rarity === 'SuperLegend' ? '#FF0000' : rarity === 'Gold' ? '#ffd700' : rarity === 'Epic' ? '#800080' : rarity === 'Rare' ? '#0000ff' : '#808080')
       .setTimestamp();
-
     await interaction.reply({ embeds: [embed] });
   }
 });
