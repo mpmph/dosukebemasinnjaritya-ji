@@ -1,6 +1,6 @@
 const { Client, GatewayIntentBits, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const express = require('express'); // Expressをインポート
-const app = express(); // Expressアプリを作成
+const express = require('express');
+const app = express();
 
 const client = new Client({ 
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] 
@@ -10,8 +10,6 @@ const client = new Client({
 app.get('/ping', (req, res) => {
   res.send('Bot is awake!');
 });
-
-// ポート3000でサーバーを起動
 app.listen(3000, () => {
   console.log('Ping server running on port 3000');
 });
@@ -21,7 +19,15 @@ client.once('ready', async () => {
 
   const bindingCommand = new SlashCommandBuilder()
     .setName('binding')
-    .setDescription('ランダムな武器をリッチテキストで表示します');
+    .setDescription('ランダムな武器をリッチテキストで表示します')
+    .addStringOption(option => 
+      option.setName('class')
+        .setDescription('クラスを指定するとランダムに選ばれます (例: Assault, Medic)')
+        .setRequired(false)) // 任意
+    .addStringOption(option => 
+      option.setName('ammo')
+        .setDescription('弾薬を指定するとランダムに選ばれます (例: Light, Heavy)')
+        .setRequired(false)); // 任意
 
   const weponomikujiCommand = new SlashCommandBuilder()
     .setName('weponomikuji')
@@ -52,12 +58,34 @@ client.on('interactionCreate', async (interaction) => {
 
   if (interaction.commandName === 'binding') {
     const weapons = ['SR', 'SG', 'AR', 'SMG', 'LMG', 'DMR', 'BOW'];
+    const classes = ['Assault', 'Skirmisher', 'controller', 'support', 'Recon'];
+    const ammoTypes = ['Light', 'Heavy', 'Energy', 'Shotgun', 'sniper'];
+
     const randomWeapon = weapons[Math.floor(Math.random() * weapons.length)];
+
+    // オプションの取得（値は使わず、指定されたかどうかのみ確認）
+    const hasClassOption = interaction.options.getString('class') !== null;
+    const hasAmmoOption = interaction.options.getString('ammo') !== null;
+
+    // Embedの基本設定
     const embed = new EmbedBuilder()
       .setTitle('ランダムな武器')
       .setDescription(`あなたの武器は: **${randomWeapon}**`)
       .setColor('#00ff00')
       .setTimestamp();
+
+    // クラスが指定された場合のみランダムに選択して表示
+    if (hasClassOption) {
+      const randomClass = classes[Math.floor(Math.random() * classes.length)];
+      embed.addFields({ name: 'クラス', value: randomClass, inline: true });
+    }
+
+    // アモが指定された場合のみランダムに選択して表示
+    if (hasAmmoOption) {
+      const randomAmmo = ammoTypes[Math.floor(Math.random() * ammoTypes.length)];
+      embed.addFields({ name: '弾薬', value: randomAmmo, inline: true });
+    }
+
     await interaction.reply({ embeds: [embed] });
   }
 
