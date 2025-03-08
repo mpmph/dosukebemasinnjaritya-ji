@@ -19,14 +19,14 @@ client.once('ready', async () => {
 
   const bindingCommand = new SlashCommandBuilder()
     .setName('binding')
-    .setDescription('ランダムな武器をリッチテキストで表示します')
+    .setDescription('ランダムな武器とクラスをリッチテキストで表示します')
     .addStringOption(option => 
       option.setName('class')
-        .setDescription('クラスを指定するとランダムに選ばれます (例: Assault, Medic)')
-        .setRequired(false)) // 任意
+        .setDescription('クラスを指定してもランダムに選ばれます (例: Assault, Skirmisher)')
+        .setRequired(false)) // 任意（効果なし）
     .addStringOption(option => 
       option.setName('ammo')
-        .setDescription('弾薬を指定するとランダムに選ばれます (例: Light, Heavy)')
+        .setDescription('弾薬を指定すると対応する武器が選ばれます (ライト, ヘビー, エネルギー, ショットガン, スナイパー)')
         .setRequired(false)); // 任意
 
   const weponomikujiCommand = new SlashCommandBuilder()
@@ -45,45 +45,48 @@ client.once('ready', async () => {
   }
 });
 
-client.on('messageCreate', (message) => {
-  if (message.author.bot) return;
-  if (message.content === '!dice') {
-    const roll = Math.floor(Math.random() * 6) + 1;
-    message.reply(`サイコロの結果: ${roll}`);
-  }
-});
-
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isCommand()) return;
 
   if (interaction.commandName === 'binding') {
-    const weapons = ['SR', 'SG', 'AR', 'SMG', 'LMG', 'DMR', 'BOW'];
-    const classes = ['Assault', 'Skirmisher', 'controller', 'support', 'Recon'];
-    const ammoTypes = ['Light', 'Heavy', 'Energy', 'Shotgun', 'sniper'];
+    // 全武器リスト
+    const allWeapons = ['R-301', 'R-99', 'スピットファイア', 'G7スカウト', 'RE-45', 'P2020', 'オルタネーター', 'プラウラー', 'ヘムロック', 'フラットライン', '30-30リピーター', 'CAR', 'トリプルテイク', 'ボルト', 'Lスター', 'ディボーション', 'ネメシス', 'モザンビーク', 'マスティフ', 'EVA-8', 'チャージライフル', 'センチネル', 'ロングボウ', 'ウィングマン'];
+    // 弾薬ごとの武器リスト
+    const ammoWeapons = {
+      'ライト': ['R-301', 'R-99', 'スピットファイア', 'G7スカウト', 'RE-45', 'P2020', 'オルタネーター'],
+      'ヘビー': ['プラウラー', 'ヘムロック', 'フラットライン', '30-30リピーター', 'CAR'],
+      'エネルギー': ['トリプルテイク', 'ボルト', 'Lスター', 'ディボーション', 'ネメシス'],
+      'ショットガン': ['モザンビーク', 'マスティフ', 'EVA-8'],
+      'スナイパー': ['チャージライフル', 'センチネル', 'ロングボウ', 'ウィングマン']
+    };
+    const classes = ['アサルト', 'スカーミッシャー', 'コントローラー', 'サポート', 'リコン'];
 
-    const randomWeapon = weapons[Math.floor(Math.random() * weapons.length)];
+    // オプションの取得
+    const selectedAmmo = interaction.options.getString('ammo');
 
-    // オプションの取得（値は使わず、指定されたかどうかのみ確認）
-    const hasClassOption = interaction.options.getString('class') !== null;
-    const hasAmmoOption = interaction.options.getString('ammo') !== null;
+    // 武器の選択
+    let randomWeapon;
+    if (selectedAmmo && ammoWeapons[selectedAmmo]) {
+      const availableWeapons = ammoWeapons[selectedAmmo];
+      randomWeapon = availableWeapons[Math.floor(Math.random() * availableWeapons.length)];
+    } else {
+      randomWeapon = allWeapons[Math.floor(Math.random() * allWeapons.length)];
+    }
+
+    // クラスは常にランダムに選択
+    const randomClass = classes[Math.floor(Math.random() * classes.length)];
 
     // Embedの基本設定
     const embed = new EmbedBuilder()
       .setTitle('ランダムな武器')
       .setDescription(`あなたの武器は: **${randomWeapon}**`)
       .setColor('#00ff00')
+      .addFields({ name: 'クラス', value: randomClass, inline: true }) // 常に表示
       .setTimestamp();
 
-    // クラスが指定された場合のみランダムに選択して表示
-    if (hasClassOption) {
-      const randomClass = classes[Math.floor(Math.random() * classes.length)];
-      embed.addFields({ name: 'クラス', value: randomClass, inline: true });
-    }
-
-    // アモが指定された場合のみランダムに選択して表示
-    if (hasAmmoOption) {
-      const randomAmmo = ammoTypes[Math.floor(Math.random() * ammoTypes.length)];
-      embed.addFields({ name: '弾薬', value: randomAmmo, inline: true });
+    // アモが指定された場合のみ表示
+    if (selectedAmmo) {
+      embed.addFields({ name: '弾薬', value: selectedAmmo, inline: true });
     }
 
     await interaction.reply({ embeds: [embed] });
