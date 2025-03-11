@@ -19,14 +19,10 @@ client.once('ready', async () => {
 
   const bindingCommand = new SlashCommandBuilder()
     .setName('binding')
-    .setDescription('ランダムな武器とクラスをリッチテキストで表示します')
-    .addStringOption(option => 
-      option.setName('class')
-        .setDescription('クラスを指定してもランダムに選ばれます (例: Assault, Skirmisher)')
-        .setRequired(false)) // 任意（効果なし）
+    .setDescription('武器縛り用です')
     .addStringOption(option => 
       option.setName('ammo')
-        .setDescription('弾薬を指定すると対応する武器が選ばれます (ライト, ヘビー, エネルギー, ショットガン, スナイパー)')
+        .setDescription('アモの入力したら武器とキャラのクラスが表示されます')
         .setRequired(false)); // 任意
 
   const weponomikujiCommand = new SlashCommandBuilder()
@@ -35,13 +31,29 @@ client.once('ready', async () => {
 
   const pullpackCommand = new SlashCommandBuilder()
     .setName('pullpack')
-    .setDescription('レアリティパックを引きます（SuperLegend 0.045%, Gold 5%, Epic 7.5%, Rare 50%, Common 37.5%）');
+    .setDescription('パックを引きます（SuperLegend 0.045%, Gold 5%, Epic 7.5%, Rare 50%, Common 37.5%）');
 
   try {
     await client.application.commands.set([bindingCommand, weponomikujiCommand, pullpackCommand]);
     console.log('スラッシュコマンドを登録しました');
   } catch (error) {
     console.error('コマンド登録エラー:', error);
+  }
+});
+
+client.on('messageCreate', (message) => {
+  if (message.author.bot) return; // ボット自身のメッセージは無視
+
+  // ボットがメンションされたかチェック
+  if (message.mentions.has(1346489744099381328)) {
+    message.reply('こんにちはわら');
+    return; // メンション処理後は他の処理をスキップ
+  }
+
+  // 既存の !dice コマンド
+  if (message.content === '!dice') {
+    const roll = Math.floor(Math.random() * 6) + 1;
+    message.reply(`サイコロの結果: ${roll}`);
   }
 });
 
