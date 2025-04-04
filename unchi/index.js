@@ -19,11 +19,15 @@ client.once('ready', async () => {
 
   const bindingCommand = new SlashCommandBuilder()
     .setName('binding')
-    .setDescription('武器縛り用です')
+    .setDescription('ランダムな武器とクラスをリッチテキストで表示します')
+    .addStringOption(option => 
+      option.setName('class')
+        .setDescription('クラスを指定してもランダムに選ばれます (例: Assault, Skirmisher)')
+        .setRequired(false))
     .addStringOption(option => 
       option.setName('ammo')
-        .setDescription('アモの入力したら武器とキャラのクラスが表示されます')
-        .setRequired(false)); // 任意
+        .setDescription('弾薬を指定すると対応する武器が選ばれます (ライト, ヘビー, エネルギー, ショットガン, スナイパー)')
+        .setRequired(false));
 
   const weponomikujiCommand = new SlashCommandBuilder()
     .setName('weponomikuji')
@@ -31,10 +35,14 @@ client.once('ready', async () => {
 
   const pullpackCommand = new SlashCommandBuilder()
     .setName('pullpack')
-    .setDescription('パックを引きます（SuperLegend 0.045%, Gold 5%, Epic 7.5%, Rare 50%, Common 37.5%）');
+    .setDescription('レアリティパックを引きます（SuperLegend 0.045%, Gold 5%, Epic 7.5%, Rare 50%, Common 37.5%）');
+
+  const hayokoiCommand = new SlashCommandBuilder()
+    .setName('hayokoi')
+    .setDescription('サーバーのメンバーをランダムに選んで「はよこい」とメンションします');
 
   try {
-    await client.application.commands.set([bindingCommand, weponomikujiCommand, pullpackCommand]);
+    await client.application.commands.set([bindingCommand, weponomikujiCommand, pullpackCommand, hayokoiCommand]);
     console.log('スラッシュコマンドを登録しました');
   } catch (error) {
     console.error('コマンド登録エラー:', error);
@@ -42,28 +50,62 @@ client.once('ready', async () => {
 });
 
 client.on('messageCreate', (message) => {
-  if (message.author.bot) return; // ボット自身のメッセージは無視
+  if (message.author.bot) return;
 
-  // ボットがメンションされたかチェック
-  if (message.mentions.has(1346489744099381328)) {
-    message.reply('こんにちはわら');
-    return; // メンション処理後は他の処理をスキップ
+  if (message.mentions.has(client.user)) {
+    const content = message.content.trim();
+    const timeMatch = content.match(/(\d{1,2}):(\d{2})/);
+
+    if (timeMatch) {
+      const [_, hours, minutes] = timeMatch;
+      const specifiedHour = parseInt(hours);
+      const specifiedMinute = parseInt(minutes);
+
+      if (specifiedHour >= 0 && specifiedHour <= 23 && specifiedMinute >= 0 && specifiedMinute <= 59) {
+        scheduleMochiPounding(message.channel, specifiedHour, specifiedMinute);
+        message.reply(`了解！${specifiedHour}:${specifiedMinute} の1時間後、2時間後、3時間後に餅つきを通知するよ！`);
+      } else {
+        message.reply('時間は「HH:MM」形式で0:00～23:59の範囲で指定してね！');
+      }
+    } else {
+      message.reply('私はここにいるよ！餅つきをスケジュールするには「@BotName HH:MM」と入力してね（例: @BotName 10:00）。');
+    }
+    return;
   }
 
-  // 既存の !dice コマンド
   if (message.content === '!dice') {
     const roll = Math.floor(Math.random() * 6) + 1;
     message.reply(`サイコロの結果: ${roll}`);
   }
 });
 
+function scheduleMochiPounding(channel, hour, minute) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute);
+
+  if (today < now) {
+    today.setDate(today.getDate() + 1);
+  }
+
+  const oneHourLater = new Date(today.getTime() + 1 * 60 * 60 * 1000);
+  const twoHoursLater = new Date(today.getTime() + 2 * 60 * 60 * 1000);
+  const threeHoursLater = new Date(today.getTime() + 3 * 60 * 60 * 1000);
+
+  [oneHourLater, twoHoursLater, threeHoursLater].forEach((time) => {
+    const delay = time - now;
+    if (delay > 0) {
+      setTimeout(() => {
+        channel.send('@everyone 餅つきやれ');
+      }, delay);
+    }
+  });
+}
+
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isCommand()) return;
 
   if (interaction.commandName === 'binding') {
-    // 全武器リスト
     const allWeapons = ['R-301', 'R-99', 'スピットファイア', 'G7スカウト', 'RE-45', 'P2020', 'オルタネーター', 'プラウラー', 'ヘムロック', 'フラットライン', '30-30リピーター', 'CAR', 'トリプルテイク', 'ボルト', 'Lスター', 'ディボーション', 'ネメシス', 'モザンビーク', 'マスティフ', 'EVA-8', 'チャージライフル', 'センチネル', 'ロングボウ', 'ウィングマン'];
-    // 弾薬ごとの武器リスト
     const ammoWeapons = {
       'ライト': ['R-301', 'R-99', 'スピットファイア', 'G7スカウト', 'RE-45', 'P2020', 'オルタネーター'],
       'ヘビー': ['プラウラー', 'ヘムロック', 'フラットライン', '30-30リピーター', 'CAR'],
@@ -73,10 +115,7 @@ client.on('interactionCreate', async (interaction) => {
     };
     const classes = ['アサルト', 'スカーミッシャー', 'コントローラー', 'サポート', 'リコン'];
 
-    // オプションの取得
     const selectedAmmo = interaction.options.getString('ammo');
-
-    // 武器の選択
     let randomWeapon;
     if (selectedAmmo && ammoWeapons[selectedAmmo]) {
       const availableWeapons = ammoWeapons[selectedAmmo];
@@ -85,18 +124,14 @@ client.on('interactionCreate', async (interaction) => {
       randomWeapon = allWeapons[Math.floor(Math.random() * allWeapons.length)];
     }
 
-    // クラスは常にランダムに選択
     const randomClass = classes[Math.floor(Math.random() * classes.length)];
-
-    // Embedの基本設定
     const embed = new EmbedBuilder()
       .setTitle('ランダムな武器')
       .setDescription(`あなたの武器は: **${randomWeapon}**`)
       .setColor('#00ff00')
-      .addFields({ name: 'クラス', value: randomClass, inline: true }) // 常に表示
+      .addFields({ name: 'クラス', value: randomClass, inline: true })
       .setTimestamp();
 
-    // アモが指定された場合のみ表示
     if (selectedAmmo) {
       embed.addFields({ name: '弾薬', value: selectedAmmo, inline: true });
     }
@@ -113,23 +148,30 @@ client.on('interactionCreate', async (interaction) => {
   if (interaction.commandName === 'pullpack') {
     const rand = Math.random() * 100;
     let rarity;
-    if (rand < 0.045) {
-      rarity = 'SuperLegend';
-    } else if (rand < 5.025) {
-      rarity = 'Gold';
-    } else if (rand < 12.5) {
-      rarity = 'Epic';
-    } else if (rand < 62.495) {
-      rarity = 'Rare';
-    } else {
-      rarity = 'Common';
-    }
+    if (rand < 0.045) rarity = 'SuperLegend';
+    else if (rand < 5.025) rarity = 'Gold';
+    else if (rand < 12.5) rarity = 'Epic';
+    else if (rand < 62.495) rarity = 'Rare';
+    else rarity = 'Common';
     const embed = new EmbedBuilder()
       .setTitle('パック結果')
       .setDescription(`あなたのパックは: **${rarity}**`)
       .setColor(rarity === 'SuperLegend' ? '#FF0000' : rarity === 'Gold' ? '#ffd700' : rarity === 'Epic' ? '#800080' : rarity === 'Rare' ? '#0000ff' : '#808080')
       .setTimestamp();
     await interaction.reply({ embeds: [embed] });
+  }
+
+  if (interaction.commandName === 'hayokoi') {
+    // サーバーのメンバー一覧を取得
+    const members = interaction.guild.members.cache.filter(member => !member.user.bot); // ボットを除外
+    if (members.size === 0) {
+      await interaction.reply('サーバーにメンバーがいないよ…');
+      return;
+    }
+
+    // ランダムに1人選択
+    const randomMember = members.random();
+    await interaction.reply(`${randomMember} はよこいあほかす`);
   }
 });
 
