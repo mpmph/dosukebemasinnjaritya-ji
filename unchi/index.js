@@ -43,7 +43,7 @@ client.once('ready', async () => {
     .addUserOption(option => 
       option.setName('user')
         .setDescription('呼び出すメンバーを選択')
-        .setRequired(true)); // 必須
+        .setRequired(true));
 
   try {
     await client.application.commands.set([bindingCommand, weponomikujiCommand, pullpackCommand, hayokoiCommand]);
@@ -167,7 +167,8 @@ client.on('interactionCreate', async (interaction) => {
 
   if (interaction.commandName === 'hayokoi') {
     const selectedUser = interaction.options.getUser('user');
-    await interaction.reply(`${selectedUser} はよこい`);
+    console.log(`選択されたユーザー: ${selectedUser.tag} (ID: ${selectedUser.id})`); // デバッグ用ログ
+    await interaction.reply(`<@${selectedUser.id}> はよこい`);
   }
 });
 
