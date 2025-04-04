@@ -39,7 +39,11 @@ client.once('ready', async () => {
 
   const hayokoiCommand = new SlashCommandBuilder()
     .setName('hayokoi')
-    .setDescription('サーバーのメンバーをランダムに選んで「はよこい」とメンションします');
+    .setDescription('指定したメンバーをメンションして「はよこい」と送信します')
+    .addUserOption(option => 
+      option.setName('user')
+        .setDescription('呼び出すメンバーを選択')
+        .setRequired(true)); // 必須
 
   try {
     await client.application.commands.set([bindingCommand, weponomikujiCommand, pullpackCommand, hayokoiCommand]);
@@ -162,16 +166,8 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   if (interaction.commandName === 'hayokoi') {
-    // サーバーのメンバー一覧を取得
-    const members = interaction.guild.members.cache.filter(member => !member.user.bot); // ボットを除外
-    if (members.size === 0) {
-      await interaction.reply('サーバーにメンバーがいないよ…');
-      return;
-    }
-
-    // ランダムに1人選択
-    const randomMember = members.random();
-    await interaction.reply(`${randomMember} はよこいあほかす`);
+    const selectedUser = interaction.options.getUser('user');
+    await interaction.reply(`${selectedUser} はよこい`);
   }
 });
 
