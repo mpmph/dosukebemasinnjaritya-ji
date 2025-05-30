@@ -3,7 +3,7 @@ const express = require('express');
 const app = express();
 
 const client = new Client({ 
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] 
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers] 
 });
 
 // Pingエンドポイント
@@ -45,8 +45,28 @@ client.once('ready', async () => {
         .setDescription('呼び出すメンバーを選択')
         .setRequired(true));
 
+  const mentionCommand = new SlashCommandBuilder()
+    .setName('mention')
+    .setDescription('指定したユーザーを毎秒指定回数メンションします')
+    .addUserOption(option => 
+      option.setName('user')
+        .setDescription('メンションするメンバーを選択')
+        .setRequired(true))
+    .addIntegerOption(option => 
+      option.setName('frequency')
+        .setDescription('毎秒のメンション回数 (1～5)')
+        .setRequired(true)
+        .setMinValue(1)
+        .setMaxValue(5))
+    .addIntegerOption(option => 
+      option.setName('duration')
+        .setDescription('メンションする秒数 (1～60)')
+        .setRequired(true)
+        .setMinValue(1)
+        .setMaxValue(60));
+
   try {
-    await client.application.commands.set([bindingCommand, weponomikujiCommand, pullpackCommand, hayokoiCommand]);
+    await client.application.commands.set([bindingCommand, weponomikujiCommand, pullpackCommand, hayokoiCommand, mentionCommand]);
     console.log('スラッシュコマンドを登録しました');
   } catch (error) {
     console.error('コマンド登録エラー:', error);
@@ -167,8 +187,34 @@ client.on('interactionCreate', async (interaction) => {
 
   if (interaction.commandName === 'hayokoi') {
     const selectedUser = interaction.options.getUser('user');
-    console.log(`選択されたユーザー: ${selectedUser.tag} (ID: ${selectedUser.id})`); // デバッグ用ログ
+    console.log(`選択されたユーザー: ${selectedUser.tag} (ID: ${selectedUser.id})`);
     await interaction.reply(`<@${selectedUser.id}> はよこい`);
+  }
+
+  if (interaction.commandName === 'mention') {
+    const selectedUser = interaction.options.getUser('user');
+    const frequency = interaction.options.getInteger('frequency');
+    const duration = interaction.options.getInteger('duration');
+
+    console.log(`メンション開始: ユーザー=${selectedUser.tag}, 頻度=${frequency}/秒, 期間=${duration}秒`);
+
+    await interaction.reply(`<@${selectedUser.id}> を毎秒${frequency}回、${duration}秒間メンション開始！`);
+
+    let secondsPassed = 0;
+    const interval = setInterval(async () => {
+      if (secondsPassed >= duration) {
+        clearInterval(interval);
+        await interaction.followUp('メンション終了！');
+        return;
+      }
+
+      // 毎秒、指定回数メンション
+      for (let i = 0; i < frequency; i++) {
+        await interaction.channel.send(`<@${selectedUser.id}> メンション`);
+      }
+
+      secondsPassed++;
+    }, 1000); // 1秒ごとに実行
   }
 });
 
